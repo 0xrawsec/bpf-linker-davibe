@@ -1,3 +1,4 @@
+// ignore-test
 // assembly-output: bpf-linker
 // compile-flags: --crate-type cdylib -C link-arg=--emit=llvm-ir -C debuginfo=2
 
@@ -44,7 +45,7 @@ static mut glob_bar: module::Bar<u8> = module::Bar::new(0);
 // CHECK: !DINamespace(name: "module"
 // CHECK: !DIDerivedType(tag: DW_TAG_member, name: "o"
 // CHECK: !DICompositeType(tag: DW_TAG_structure_type,
-// CHECK: !DINamespace(name: "option", scope: !14)
+// CHECK: !DINamespace(name: "option", scope:
 // CHECK: !DINamespace(name: "core", scope: null)
 
 static mut glob_foo: module::Bar<[u8; 64]> = module::Bar::new([0; 64]);

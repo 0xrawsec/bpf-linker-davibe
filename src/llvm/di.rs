@@ -8,8 +8,15 @@ use llvm_sys::core::*;
 use llvm_sys::debuginfo::*;
 use llvm_sys::prelude::*;
 use log::*;
+use std::collections::hash_map::DefaultHasher;
 use std::collections::HashSet;
 use std::ffi::CStr;
+use std::hash::Hasher;
+
+// KSYM_NAME_LEN from linux kernel intentionally set
+// to lower value found accross kernel versions to ensure
+// backward compatibility
+const MAX_KSYM_NAME_LEN: usize = 128;
 
 pub struct DIFix {
     context: LLVMContextRef,
@@ -21,7 +28,8 @@ pub struct DIFix {
 
 // Sanitize Rust type names to be valid C type names.
 fn sanitize_type_name(name: String) -> String {
-    name.chars()
+    let n: String = name
+        .chars()
         .map(|ch| {
             // Characters which are valid in C type names (alphanumeric and `_`).
             if matches!(ch, '0'..='9' | 'A'..='Z' | 'a'..='z' | '_') {
@@ -30,7 +38,19 @@ fn sanitize_type_name(name: String) -> String {
                 format!("_{:X}_", ch as u32)
             }
         })
-        .collect()
+        .collect();
+
+    // we trim type_name if it is too long
+    if n.len() > MAX_KSYM_NAME_LEN {
+        let mut hasher = DefaultHasher::new();
+        hasher.write(n.as_bytes());
+        let hash = format!("{:x}", hasher.finish());
+        // leave space for underscore
+        let trim = MAX_KSYM_NAME_LEN - hash.len() - 1;
+        return format!("{}_{hash}", n[..trim].to_string());
+    }
+
+    n
 }
 
 impl DIFix {
